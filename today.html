@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ideas Notebook</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 15px 20px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    }
+
+    header img {
+      height: 80px;
+      margin-right: 15px;
+      animation: bounce 2s infinite;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin: 0;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      padding: 15px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(6px);
+    }
+
+    nav button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      background: #fff;
+      color: #007BFF;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    nav button:hover {
+      background: #007BFF;
+      color: #fff;
+      transform: scale(1.1);
+    }
+
+    .page {
+      display: none;
+      padding: 20px;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .active {
+      display: block;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      color: #fff;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.95);
+      padding: 20px;
+      margin: 15px auto;
+      max-width: 600px;
+      border-radius: 15px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+      transition: transform 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      background: #f1f1f1;
+    }
+
+    button.action {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 25px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #FF6FD8, #3813C2);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+
+    button.action:hover {
+      transform: scale(1.1);
+    }
+
+    .note {
+      margin: 15px 0;
+      padding: 15px;
+      border-left: 5px solid #007BFF;
+      background: #fff;
+      border-radius: 10px;
+      animation: slideUp 0.5s ease;
+    }
+
+    .note p {
+      margin: 5px 0;
+    }
+
+    .tags {
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    @keyframes slideUp {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Notification Sound -->
+  <audio id="notifySound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+
+  <!-- Header -->
+  <header>
+    <img src="image/photo.png" alt="Logo">
+    <h1>💡 My Ideas Notebook</h1>
+  </header>
+
+  <!-- Navigation -->
+  <nav>
+    <button onclick="showPage('home')">🏠 Home</button>
+    <button onclick="showPage('add')">➕ Add Idea</button>
+    <button onclick="showPage('ideas')">📝 Your Ideas</button>
+    <button onclick="showPage('favourites')">⭐ Favourites</button>
+  </nav>
+
+  <!-- Pages -->
+  <div id="home" class="page active">
+    <h2>Welcome 🚀</h2>
+    <div class="card">
+      <p>✨ Save your thoughts, set reminders, and never lose an idea again.</p>
+    </div>
+  </div>
+
+  <div id="add" class="page">
+    <h2>Add a New Idea</h2>
+    <div class="card">
+      <textarea id="noteText" placeholder="Write your idea..."></textarea>
+      <input type="text" id="tags" placeholder="Tags (comma separated)">
+      <input type="datetime-local" id="reminderTime">
+      <button class="action" onclick="startVoice()">🎤 Speak</button>
+      <button class="action" onclick="saveNote()">💾 Save Idea</button>
+    </div>
+  </div>
+
+  <div id="ideas" class="page">
+    <h2>Your Ideas</h2>
+    <div id="notes"></div>
+  </div>
+
+  <div id="favourites" class="page">
+    <h2>⭐ Favourite Ideas</h2>
+    <div id="favs"></div>
+  </div>
+
+  <script>
+    let notes = JSON.parse(localStorage.getItem("notes") || "[]");
+    let editIndex = -1;
+
+    function showPage(id) {
+      document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    // 🎤 Voice to Text
+    // Voice to Text functionality
+function startVoice() {
+    // Check if the browser supports the Web Speech API
+    if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+        
+        // Set properties for the recognition
+        recognition.lang = 'en-US'; // You can change this to 'hi-IN' for Hindi
+        recognition.continuous = false; // Stop after one phrase
+        recognition.interimResults = false; // Don't show results until the final one
+
+        // When a result is received, put the transcribed text into the notes area
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('noteText').value = transcript;
+        };
+
+        // If there's an error, log it to the console
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            alert('An error occurred during speech recognition. Check the console for details.');
+        };
+        
+        // Start the recognition
+        recognition.start();
+
+        // Optional: Provide feedback to the user
+        alert("Please start speaking. I'm listening...");
+
+    } else {
+        // Handle case where the browser doesn't support the API
+        alert("Sorry, your browser does not support the Web Speech API.");
+    }
+}
+        
+// Event listener to call the function when mic button is clicked
+document.getElementById('mic-btn').addEventListener('click', startVoice);
+   
+    //   if ('webkitSpeechRecognition' in window) {
+    //     const recognition = new webkitSpeechRecognition();
+    //     recognition.lang = "en-US";
+    //     recognition.onresult = function (event) {
+    //       document.getElementById("noteText").value = event.results[0][0].transcript;
+    //     };
+    //     recognition.start();
+    //   } else {
+    //     alert("Speech Recognition not supported in your browser.");
+    //   }
+    // }
+
+    // 💾 Save Note
+    function saveNote() {
+      let text = document.getElementById("noteText").value.trim();
+      let tags = document.getElementById("tags").value.trim().split(",").map(t=>t.trim()).filter(Boolean);
+      let time = document.getElementById("reminderTime").value;
+
+      if(!text) return alert("Write something!");
+      if(!time) return alert("Set a reminder!");
+
+      if(editIndex === -1){
+        let note = { text, tags, time, fav: false };
+        notes.push(note);
+        scheduleReminder(note);
+      } else {
+        notes[editIndex] = { text, tags, time, fav: notes[editIndex].fav };
+        editIndex = -1;
+      }
+
+      localStorage.setItem("notes", JSON.stringify(notes));
+      displayNotes();
+      document.getElementById("noteText").value="";
+      document.getElementById("tags").value="";
+      document.getElementById("reminderTime").value="";
+      alert("✅ Note saved!");
+    }
+
+    // ⏰ Reminder Function
+    function scheduleReminder(note) {
+      let reminderTime = new Date(note.time).getTime();
+      let now = new Date().getTime();
+      let delay = reminderTime - now;
+      if (delay > 0) {
+        setTimeout(() => {
+          let sound = document.getElementById("notifySound");
+          sound.play();
+          alert("⏰ Reminder: " + note.text);
+        }, delay);
+      }
+    }
+
+    // 📌 Display Notes
+    function displayNotes() {
+      let notesDiv = document.getElementById("notes");
+      let favDiv = document.getElementById("favs");
+      notesDiv.innerHTML="";
+      favDiv.innerHTML="";
+      notes.forEach((n,i)=>{
+        let card = document.createElement("div");
+        card.className="note";
+        card.innerHTML=`
+          <p>${n.text}</p>
+          <p class="tags">Tags: ${n.tags.join(", ")||"None"}</p>
+          <p class="tags">⏰ ${new Date(n.time).toLocaleString()}</p>
+          <button onclick="editNote(${i})">✏️ Edit</button>
+          <button onclick="toggleFav(${i})">${n.fav?"⭐ Unfavourite":"☆ Favourite"}</button>
+          <button onclick="deleteNote(${i})">🗑️ Delete</button>
+        `;
+        if(n.fav) favDiv.appendChild(card); else notesDiv.appendChild(card);
+      });
+    }
+
+    // ✏️ Edit Note
+    function editNote(i){
+      let n = notes[i];
+      document.getElementById("noteText").value=n.text;
+      document.getElementById("tags").value=n.tags.join(", ");
+      document.getElementById("reminderTime").value=n.time;
+      showPage('add');
+      editIndex=i;
+    }
+
+    function toggleFav(i){
+      notes[i].fav=!notes[i].fav;
+      localStorage.setItem("notes", JSON.stringify(notes));
+      displayNotes();
+    }
+
+    function deleteNote(i){
+      if(confirm("Delete this note?")){
+        notes.splice(i,1);
+        localStorage.setItem("notes", JSON.stringify(notes));
+        displayNotes();
+      }
+    }
+
+    // Reload notes + re-schedule reminders
+    notes.forEach(n=>scheduleReminder(n));
+    displayNotes();
+  </script>
+</body>
+</html>

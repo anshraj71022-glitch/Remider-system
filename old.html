@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Notes with LocalStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .note-input,
+        .search-box {
+            margin: 15px 0;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 5px 3px 0 0;
+            border: none;
+            border-radius: 5px;
+            background: #007BFF;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .note {
+            background: #fff;
+            padding: 12px;
+            margin: 12px 0;
+            border-left: 5px solid #007BFF;
+            border-radius: 5px;
+        }
+
+        .tags {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .note-actions {
+            margin-top: 8px;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+        }
+
+        .delete-btn:hover {
+            background: #a71d2a;
+        }
+
+        .edit-btn {
+            background: #28a745;
+        }
+
+        .edit-btn:hover {
+            background: #1e7e34;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📝 My Voice Notes</h1>
+
+    <!-- Search Box -->
+    <div class="search-box">
+        <input type="text" id="search" placeholder="Search notes by text or tag...">
+    </div>
+
+    <!-- Input Section -->
+
+    <div class="note-input">
+        <textarea id="noteText" placeholder="Write or use voice..."></textarea>
+        <input type="text" id="tags" placeholder="Add tags (comma separated)">
+        <button onclick="startVoice()">🎤 Voice Input</button>
+        <input type="datetime-local" id="reminderTime">
+        <button onclick="saveNote()">💾 Save Note (Reminder in 24h)</button>
+    </div>
+
+    <!-- Notes Display -->
+    <div id="notes"></div>
+
+    <script>
+        let notes = [];
+        let editIndex = -1;
+
+        // 🚀 Load saved notes from localStorage on page load
+        window.onload = function () {
+            let savedNotes = localStorage.getItem("notes");
+            if (savedNotes) {
+                notes = JSON.parse(savedNotes);
+                displayNotes();
+            }
+        };
+
+        // 🎤 Voice to Text
+        // function startVoice() {
+        //     if ('webkitSpeechRecognition' in window) {
+        //         const recognition = new webkitSpeechRecognition();
+        //         recognition.lang = "en-US";
+        //         recognition.onresult = function (event) {
+        //             document.getElementById("noteText").value = event.results[0][0].transcript;
+        //         };
+        //         recognition.start();
+        //     } else {
+        //         alert("Speech Recognition not supported in your browser.");
+        //     }
+        // }
+        // Voice to Text functionality
+function startVoice() {
+    // Check if the browser supports the Web Speech API
+    if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+        
+        // Set properties for the recognition
+        recognition.lang = 'en-US'; // You can change this to 'hi-IN' for Hindi
+        recognition.continuous = false; // Stop after one phrase
+        recognition.interimResults = false; // Don't show results until the final one
+
+        // When a result is received, put the transcribed text into the notes area
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('noteText').value = transcript;
+        };
+
+        // If there's an error, log it to the console
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            alert('An error occurred during speech recognition. Check the console for details.');
+        };
+        
+        // Start the recognition
+        recognition.start();
+
+        // Optional: Provide feedback to the user
+        alert("Please start speaking. I'm listening...");
+
+    } else {
+        // Handle case where the browser doesn't support the API
+        alert("Sorry, your browser does not support the Web Speech API.");
+    }
+}
+        
+// Event listener to call the function when mic button is clicked
+document.getElementById('mic-btn').addEventListener('click', startVoice);
+
+        // 💾 Save Note with Reminder + localStorage
+
+        function saveNote() {
+            let text = document.getElementById("noteText").value.trim();
+            let tags = document.getElementById("tags").value.trim();
+            let timeInput = document.getElementById("reminderTime").value; // user se time input
+
+            if (text === "") return alert("Please write or speak a note!");
+            if (!timeInput) return alert("Please set a reminder time!");
+
+            let note = {
+                content: text,
+                tags: tags.split(",").map(t => t.trim()).filter(t => t),
+                time: timeInput
+            };
+
+            // reminder set karo
+            let reminderTime = new Date(timeInput).getTime();
+            let now = new Date().getTime();
+            let delay = reminderTime - now;
+
+            if (delay > 0) {
+                setTimeout(() => {
+                    alert("⏰ Reminder: " + text);
+                }, delay);
+            } else {
+                alert("Reminder time should be in the future!");
+            }
+
+            notes.push(note);
+            saveToLocalStorage();
+            displayNotes();
+
+            document.getElementById("noteText").value = "";
+            document.getElementById("tags").value = "";
+            document.getElementById("reminderTime").value = "";
+        }
+        // function saveNote() {
+        //     let text = document.getElementById("noteText").value.trim();
+        //     let tags = document.getElementById("tags").value.trim();
+        //     if (text === "") return alert("Please write or speak a note!");
+
+        //     let note = {
+        //         content: text,
+        //         tags: tags.split(",").map(t => t.trim()).filter(t => t)
+        //     };
+
+        //     if (editIndex === -1) {
+        //         notes.push(note);
+        //         // 24-hour reminder
+        //         setTimeout(() => {
+        //             alert("Reminder: " + text);
+        //         }, 86400000);
+        //     } else {
+        //         notes[editIndex] = note;
+        //         editIndex = -1;
+        //     }
+
+        //     saveToLocalStorage();
+        //     displayNotes();
+
+        //     document.getElementById("noteText").value = "";
+        //     document.getElementById("tags").value = "";
+        // }
+
+        // 📌 Display Notes
+        function displayNotes(filtered = notes) {
+            let notesDiv = document.getElementById("notes");
+            notesDiv.innerHTML = "";
+            filtered.forEach((note, index) => {
+                notesDiv.innerHTML += `
+          <div class="note">
+            <p>${note.content}</p>
+            <p class="tags">Tags: ${note.tags.join(", ") || "None"}</p>
+            <div class="note-actions">
+              <button class="edit-btn" onclick="editNote(${index})">✏️ Edit</button>
+              <button class="delete-btn" onclick="deleteNote(${index})">🗑️ Delete</button>
+            </div>
+          </div>`;
+            });
+        }
+
+        // ✏️ Edit Note
+        function editNote(index) {
+            document.getElementById("noteText").value = notes[index].content;
+            document.getElementById("tags").value = notes[index].tags.join(", ");
+            editIndex = index;
+        }
+
+        // 🗑️ Delete Note
+        function deleteNote(index) {
+            if (confirm("Are you sure you want to delete this note?")) {
+                notes.splice(index, 1);
+                saveToLocalStorage();
+                displayNotes();
+            }
+        }
+
+        // 🔍 Search Notes
+        document.getElementById("search").addEventListener("input", function () {
+            let query = this.value.toLowerCase();
+            let filtered = notes.filter(note =>
+                note.content.toLowerCase().includes(query) ||
+                note.tags.some(tag => tag.toLowerCase().includes(query))
+            );
+            displayNotes(filtered);
+        });
+
+        // 💾 Save notes array into localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem("notes", JSON.stringify(notes));
+        }
+    </script>
+</body>
+
+</html>

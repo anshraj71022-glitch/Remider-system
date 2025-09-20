@@ -1,0 +1,171 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idea Vault</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-areas:
+                "header header header"
+                "reminder note-area right-sidebar"
+                "down-file down-file down-file";
+            grid-template-columns: 20% 55% 25%;
+            grid-template-rows: 100px 1fr 60px;
+            height: 100vh;
+            border: 2px solid black;
+            box-sizing: border-box;
+        }
+
+        .header-area {
+            grid-area: header;
+            background-color: #e0e0e0;
+            border-bottom: 2px solid black;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reminder-area {
+            grid-area: reminder;
+            background-color: #dcdcdc;
+            border-right: 2px solid black;
+            padding: 15px;
+        }
+
+        .note-area {
+            grid-area: note-area;
+            background-color: #ffffff;
+            padding: 15px;
+        }
+
+        .right-sidebar {
+            grid-area: right-sidebar;
+            background-color: #dcdcdc;
+            border-left: 2px solid black;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .down-file-area {
+            grid-area: down-file;
+            background-color: #e0e0e0;
+            border-top: 2px solid black;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 15px;
+        }
+
+        /* Basic styling */
+        .header-area h1, .header-area p {
+            margin: 0;
+        }
+
+        .note-input textarea {
+            width: 100%;
+            height: 90%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 16px;
+        }
+
+        .reminder-area h3, .reminder-area p, .right-sidebar p {
+            margin: 5px 0;
+        }
+
+        .search-area, .folder-area {
+            border: 1px dashed #666;
+            padding: 10px;
+            margin-bottom: 10px;
+            height: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <header class="header-area">
+            <h1>Idea Vault</h1>
+            <p>Thought:</p>
+            <div class="header-fill"></div>
+        </header>
+
+        <aside class="reminder-area">
+            <h3>Remind If:</h3>
+            <div class="reminder-options">
+                <p>Date:</p>
+                <p>Time, Day:</p>
+                <p>Write an idea.</p>
+            </div>
+        </aside>
+
+        <section class="note-area">
+            <div class="note-input">
+                <textarea id="noteText" placeholder="Write your idea here..."></textarea>
+            </div>
+        </section>
+
+        <aside class="right-sidebar">
+            <div class="search-area">
+                <p>Search and manage.</p>
+            </div>
+            <div class="folder-area">
+                <p>Save Folder Area.</p>
+            </div>
+        </aside>
+
+        <footer class="down-file-area">
+            <div class="page-no">
+                <p>P-1</p>
+            </div>
+            <div class="save-option">
+                <p>Save</p>
+                <span class="save-icon">✔</span>
+                <button id="mic-btn">🎙️</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Voice to Text functionality
+        function startVoice() {
+            if ('webkitSpeechRecognition' in window) {
+                const recognition = new webkitSpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('noteText').value = transcript;
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    alert('An error occurred during speech recognition. Check the console for details.');
+                };
+
+                recognition.start();
+
+                alert("Please start speaking. I'm listening...");
+
+            } else {
+                alert("Sorry, your browser does not support the Web Speech API.");
+            }
+        }
+        
+        // Event listener to call the function when mic button is clicked
+        document.getElementById('mic-btn').addEventListener('click', startVoice);
+    </script>
+</body>
+</html>
